@@ -1,5 +1,7 @@
 //! The [`ctor`] crate reimplemented using procedural macros.
 
+#![no_std]
+
 /// Run a function on program startup.
 #[macro_export]
 macro_rules! ctor {

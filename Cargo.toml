@@ -1,7 +1,17 @@
 [package]
 name = "ctor-lite"
 version = "0.1.0"
-edition = "2021"
+edition = "2018"
+rust-version = "1.38.0"
+authors = ["John Nunley <dev@notgull.net>"]
+repository = "https://codeberg.org/notgull/ctor-lite"
+homepage = "https://codeberg.org/notgull/ctor-lite"
+license = "MIT OR Apache-2.0"
+
+[features]
+default = ["std"]
+alloc = []
+std = ["alloc"]
 
 [dev-dependencies]
 macro_rules_attribute = "0.2.0"
