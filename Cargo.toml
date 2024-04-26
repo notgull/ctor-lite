@@ -1,0 +1,8 @@
+[package]
+name = "ctor-lite"
+version = "0.1.0"
+edition = "2021"
+
+[dev-dependencies]
+macro_rules_attribute = "0.2.0"
+rustix = { version = "0.38.34", features = ["stdio"], default-features = false }
