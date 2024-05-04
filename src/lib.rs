@@ -1,8 +1,213 @@
 //! The [`ctor`] crate reimplemented using procedural macros.
+//!
+//! [`ctor`]: https://crates.io/crates/ctor
+//!
+//! In some cases it is necessary to run code at the very start or the very end
+//! of the program. This crate provides a macro that can be used to run code at
+//! the very beginning of program execution, along with some extra features.
+//!
+//! ## Advantages over [`ctor`]
+//!
+//! - Completely dependency free, thanks to relying on procedural macros instead
+//!   of proc macros.
+//! - Supports all of the same use cases as the [`ctor`] crate.
+//! - Supports all of the same platforms as the [`ctor`] crate.
+//! - Fixes a couple of warts in [`ctor`]'s API, such as:
+//!   - `unsafe` is required when it is used, see the "Safety" section below.
+//!   - Global variables are required to be `Sync`.
+//!   - Global variables use `MaybeUninit` instead of `Option`.
+//!   - Functions set up with the `ctor` or `dtor` macros cannot be called in
+//!     other Rust code.
+//!
+//! ## Disadvantages
+//!
+//! - The API has a slightly different form factor that can be inconvenient in
+//!   some cases.
+//! - The MSRV has been raised to 1.36.0.
+//!
+//! ## Functional Usage
+//!
+//! The `ctor` macro can be used to run a function at program startup time.
+//!
+//! ```
+//! use std::sync::atomic::{AtomicUsize, Ordering};
+//!
+//! static INITIALIZED: AtomicUsize = AtomicUsize::new(0);
+//!
+//! ctor_lite::ctor! {
+//!     unsafe fn set_value() {
+//!         INITIALIZED.store(1, Ordering::Relaxed);
+//!     }
+//! }
+//!
+//! assert_eq!(INITIALIZED.load(Ordering::Relaxed), 1);
+//! ```
+//!
+//! Note that this macro is a procedural block rather than an attribute macro.
+//! If you prefer the old way of using the macro you can use the
+//! [`macro-rules-attribute`] crate.
+//!
+//! [`macro-rules-attribute`]: https://crates.io/crates/macro-rules-attribute
+//!
+//! ```
+//! use macro_rules_attribute::apply;
+//! use std::sync::atomic::{AtomicUsize, Ordering};
+//!
+//! static INITIALIZED: AtomicUsize = AtomicUsize::new(0);
+//!
+//! #[apply(ctor_lite::ctor!)]
+//! unsafe fn set_value() {
+//!     INITIALIZED.store(1, Ordering::Relaxed);
+//! }
+//!
+//! assert_eq!(INITIALIZED.load(Ordering::Relaxed), 1);
+//! ```
+//!
+//! ## Static Usage
+//!
+//! The `ctor` macro can be used to create a static variable initialized to a
+//! default value. At startup time, the function is used to initialize the
+//! static variable.
+//!
+//! ```
+//! fn value() -> i32 {
+//!     6
+//! }
+//!
+//! ctor_lite::ctor! {
+//!     unsafe static VALUE: i32 = value();
+//! }
+//!
+//! assert_eq!(*VALUE, 6);
+//! ```
+//!
+//! ## Destructor
+//!
+//! This crate can also be used to run a function at program exit as well. The
+//! `dtor` macro can be used to run a function when the program ends.
+//!
+//! ```
+//! use macro_rules_attribute::apply;
+//!
+//! #[apply(ctor_lite::dtor!)]
+//! unsafe fn run_at_exit() {
+//!     do_some_cleanup();
+//! }
+//!
+//! # fn do_some_cleanup() {}
+//! ```
+//!
+//! ## Safety
+//!
+//! Macros from this crate must be used with care. In general Rust code is run
+//! with the assumption that no other code is run before program startup, and
+//! no other code is run after program shutdown. Specifically, `libstd` sets up
+//! some global variables before the `main` function and then assumes these
+//! variables are set throughout its runtime. Therefore, calling `libstd`
+//! functions that use these variables will lead to undefined behavior.
+//!
+//! Generally, functions from `core` or `alloc` are safe to call in these
+//! functions. In addition, functions from [`libc`] should be able to be called
+//! freely, as well as most of the functions contained in [`rustix`]. Other
+//! crates should be used only when it is understood what other calls they
+//! contain.
+//!
+//! [`libc`]: https://crates.io/crates/libc
+//! [`rustix`]: https://crates.io/crates/rustix
+//!
+//! In addition, no ordering is guaranteed for functions ran in the `ctor` or
+//! `dtor` macros.
+//!
+//! ## Implementation
+//!
+//! The `ctor` macro works by creating a function with linker attributes that
+//! place it into a special section in the file. When the C runtime starts the
+//! program, it reads function pointers from this section and runs them.
+//!
+//! This function call...
+//!
+//! ```
+//! ctor_lite::ctor! {
+//!     unsafe fn foo() { /* ... */ }
+//! }
+//! ```
+//!
+//! ...is translated to code that looks like this:
+//!
+//! ```
+//! #[used]
+//! #[cfg_attr(any(target_os = "linux", target_os = "android"), link_section = ".init_array")]
+//! #[cfg_attr(target_os = "freebsd", link_section = ".init_array")]
+//! #[cfg_attr(target_os = "netbsd", link_section = ".init_array")]
+//! #[cfg_attr(target_os = "openbsd", link_section = ".init_array")]
+//! #[cfg_attr(target_os = "illumos", link_section = ".init_array")]
+//! #[cfg_attr(any(target_os = "macos", target_os = "ios", target_os = "tvos"), link_section = "__DATA_CONST,__mod_init_func")]
+//! #[cfg_attr(target_os = "windows", link_section = ".CRT$XCU")]
+//! static FOO: extern fn() = {
+//!   #[cfg_attr(any(target_os = "linux", target_os = "android"), link_section = ".text.startup")]
+//!   extern fn foo() { /* ... */ };
+//!   foo
+//! };
+//! ```
+//!
+//! When creating a global constant with the `ctor` macro it writes code that
+//! runs the function then writes the value into a global constant.
+//!
+//! This code...
+//!
+//! ```
+//! ctor_lite::ctor! {
+//!     unsafe static FOO: i32 = foo();
+//! }
+//! # fn foo() -> i32 { 1 }
+//! ```
+//!
+//! ...is translated to code that looks like this, with modifications that allow
+//! for `FOO` to be used from safe code:
+//!
+//! ```no_compile
+//! static mut FOO: i32 = core::mem::uninitialized();
+//! ctor_lite::ctor! {
+//!     unsafe fn init_storage() {
+//!         FOO = foo();
+//!     }
+//! }
+//! # fn foo() -> i32 { 1 }
+//! ```
+//!
+//! When functions are put into `dtor`, it runs `ctor` with the `libc::atexit`
+//! function to ensure that the function is run at program exit.
+//!
+//! This code...
+//!
+//! ```
+//! ctor_lite::dtor! {
+//!     unsafe fn foo() {
+//!         /* ... */
+//!     }
+//! }
+//! ```
+//!
+//! ...is translated to code that looks like this, with modifications that let
+//! us avoid a dependency on the [`libc`] crate:
+//!
+//! ```no_compile
+//! unsafe fn foo() {
+//!     /* ... */
+//! }
+//!
+//! ctor_lite::ctor! {
+//!     unsafe fn run_dtor() {
+//!         libc::atexit(foo);
+//!     }
+//! }
+//! ```
 
 #![no_std]
 
-/// Run a function on program startup.
+/// Run a function on program startup or initialize a constant.
+///
+/// See the crate level documentation for more info.
 #[macro_export]
 macro_rules! ctor {
     // Case 1: Run a function at startup time.
@@ -132,6 +337,8 @@ macro_rules! ctor {
 }
 
 /// Run a function on program shutdown.
+///
+/// See the crate level documentation for more information.
 #[macro_export]
 macro_rules! dtor {
     (
