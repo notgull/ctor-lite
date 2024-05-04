@@ -54,7 +54,7 @@ macro_rules! ctor {
                     target_os = "ios",
                     target_os = "visionos",
                     target_os = "tvos"
-                ), 
+                ),
                 link_section = "__DATA,__mod_init_func"
             )]
             #[cfg_attr(windows, link_section = ".CRT$XCU")]

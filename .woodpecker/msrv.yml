@@ -11,9 +11,10 @@ steps:
   msrv:
     image: rust
     commands:
+     - cargo install cargo-hack
      - rustup default ${RUST_VERSION}
      - rm Cargo.lock
-     - cargo build
+     - cargo hack build --no-dev-deps
     environment:
       CARGO_INCREMENTAL: "0"
       CARGO_NET_GIT_FETCH_WITH_CLI: "true"
