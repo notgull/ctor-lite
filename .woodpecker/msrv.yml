@@ -5,7 +5,7 @@ when:
 
 matrix:
   RUST_VERSION:
-   - "1.63.0"
+   - "1.36.0"
 
 steps:
   msrv:

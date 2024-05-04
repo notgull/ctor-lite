@@ -2,7 +2,7 @@
 name = "ctor-lite"
 version = "0.1.0"
 edition = "2018"
-rust-version = "1.38.0"
+rust-version = "1.36.0"
 authors = ["John Nunley <dev@notgull.net>"]
 repository = "https://codeberg.org/notgull/ctor-lite"
 homepage = "https://codeberg.org/notgull/ctor-lite"
