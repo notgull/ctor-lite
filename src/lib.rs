@@ -1,4 +1,4 @@
-//! The [`ctor`] crate reimplemented using procedural macros.
+//! The [`ctor`] crate reimplemented using declarative macros.
 //!
 //! [`ctor`]: https://crates.io/crates/ctor
 //!
@@ -8,7 +8,7 @@
 //!
 //! ## Advantages over [`ctor`]
 //!
-//! - Completely dependency free, thanks to relying on procedural macros instead
+//! - Completely dependency free, thanks to relying on declarative macros instead
 //!   of proc macros.
 //! - Supports all of the same use cases as the [`ctor`] crate.
 //! - Supports all of the same platforms as the [`ctor`] crate.
@@ -24,6 +24,7 @@
 //! - The API has a slightly different form factor that can be inconvenient in
 //!   some cases.
 //! - The MSRV has been raised to 1.36.0.
+//! - Docstrings are not supported.
 //!
 //! ## Functional Usage
 //!
@@ -43,7 +44,7 @@
 //! assert_eq!(INITIALIZED.load(Ordering::Relaxed), 1);
 //! ```
 //!
-//! Note that this macro is a procedural block rather than an attribute macro.
+//! Note that this macro is a declarative block rather than an attribute macro.
 //! If you prefer the old way of using the macro you can use the
 //! [`macro-rules-attribute`] crate.
 //!
