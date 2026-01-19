@@ -14,8 +14,10 @@ steps:
     image: rust
     commands:
       - rustup default ${RUST_VERSION}
+      - if [ ${RUST_VERSION} = "nightly" ]; then rustup component add miri; fi
       - cargo build --all --all-features --all-targets
       - if [ ${RUST_VERSION} = "nightly" ]; then cargo check -Z features=dev_dep; fi
+      - if [ ${RUST_VERSION} = "nightly" ]; then cargo miri test; fi
       - cargo test 2>&1 | tee /tmp/results
       - grep -i -q "0123456789" /tmp/results
     environment:
@@ -27,3 +29,4 @@ steps:
       RUSTFLAGS: "-D warnings"
       RUSTDOCFLAGS: "-D warnings"
       RUSTUP_MAX_RETRIES: "10"
+

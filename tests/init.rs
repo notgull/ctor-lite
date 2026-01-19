@@ -1,4 +1,4 @@
-use ctor_lite::{ctor, dtor};
+use ctor_lite::ctor;
 use macro_rules_attribute::apply;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -22,7 +22,8 @@ ctor! {
     unsafe static INITED_3: usize = 0xDEAD;
 }
 
-dtor! {
+#[cfg(not(miri))]
+ctor_lite::dtor! {
     unsafe fn run_at_exit() {
         let stderr = unsafe {
             rustix::stdio::stderr()

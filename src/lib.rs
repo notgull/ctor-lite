@@ -87,7 +87,8 @@
 //! This crate can also be used to run a function at program exit as well. The
 //! `dtor` macro can be used to run a function when the program ends.
 //!
-//! ```
+#![cfg_attr(not(miri), doc = "```")]
+#![cfg_attr(miri, doc = "```no_run")]
 //! use macro_rules_attribute::apply;
 //!
 //! #[apply(ctor_lite::dtor!)]
@@ -181,7 +182,8 @@
 //!
 //! This code...
 //!
-//! ```
+#![cfg_attr(not(miri), doc = "```")]
+#![cfg_attr(miri, doc = "```no_run")]
 //! ctor_lite::dtor! {
 //!     unsafe fn foo() {
 //!         /* ... */
@@ -217,6 +219,12 @@ macro_rules! ctor {
         $vis:vis unsafe fn $name:ident () $bl:block
     ) => {
         const _: () = {
+            // Fix for issue #2.
+            #[cfg(all(windows, not(miri)))]
+            type Ret = usize;
+            #[cfg(any(not(windows), miri))]
+            type Ret = ();
+
             $(#[$meta])*
             $vis unsafe fn $name () {
                 unsafe fn __this_thing_is_always_unsafe() {}
@@ -264,14 +272,14 @@ macro_rules! ctor {
                 link_section = "__DATA,__mod_init_func"
             )]
             #[cfg_attr(windows, link_section = ".CRT$XCU")]
-            static __rust_ctor_lite__ctor: unsafe extern "C" fn() -> usize = {
+            static __rust_ctor_lite__ctor: unsafe extern "C" fn() -> Ret = {
                 #[cfg_attr(
                     any(target_os = "linux", target_os = "android"),
                     link_section = ".text.startup"
                 )]
-                unsafe extern "C" fn ctor() -> usize {
+                unsafe extern "C" fn ctor() -> Ret {
                     $name ();
-                    0
+                    ::core::default::Default::default()
                 }
 
                 ctor
