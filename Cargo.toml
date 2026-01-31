@@ -8,7 +8,7 @@ authors = ["John Nunley <dev@notgull.net>"]
 repository = "https://codeberg.org/notgull/ctor-lite"
 homepage = "https://codeberg.org/notgull/ctor-lite"
 license = "MIT OR Apache-2.0"
-categories = ["macros"]
+categories = []
 keywords = ["ctor", "macros"]
 
 [features]
