@@ -3,6 +3,10 @@ when:
       branch: main
     - event: pull_request
 
+labels:
+    platform: linux/amd64
+    backend: docker
+
 matrix:
     RUST_VERSION:
         - stable

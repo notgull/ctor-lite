@@ -2,6 +2,10 @@ when:
     - event: push
       branch: main
 
+labels:
+    platform: linux/amd64
+    backend: docker
+
 clone:
     git:
         image: woodpeckerci/plugin-git

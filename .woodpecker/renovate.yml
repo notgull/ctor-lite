@@ -2,6 +2,10 @@ when:
     - event: cron
       cron: renovate
 
+labels:
+    platform: linux/amd64
+    backend: docker
+
 steps:
     renovate:
         image: renovate/renovate
