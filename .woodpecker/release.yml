@@ -23,8 +23,8 @@ steps:
     crates_io_release:
         image: rust:latest
         commands:
-            - cargo login $CRATES_IO_API_TOKEN
-            - cargo publish
+            - echo $CRATES_IO_API_TOKEN | cargo login
+            - cargo publish --allow-dirty
         environment:
             CRATES_IO_API_TOKEN:
                 from_secret: crates_io_api_token
